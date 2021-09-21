@@ -42,6 +42,11 @@ public:
   virtual bool load(const JsonObjectConst& historyElement) = 0;
   virtual bool load(const String& historyFilePath) = 0;
   virtual bool conditionalPush(Serializable& item) = 0;
+  virtual void clear();
+  void setInterval(time_t interval) { _interval = interval; }
+
+protected:
+  time_t _interval = 0;
 };
 
 template<typename ItemType, int Size>
@@ -68,7 +73,6 @@ public:
 
     writePostscript(writeStream);
 
-    Log.verbose("HistoryBuffer written to stream");
     return true;
   }
 
@@ -83,15 +87,32 @@ public:
     bool success = store(historyFile);
     historyFile.close();
 
-    if (success) Log.verbose("HistoryBuffer written written to file");
+    if (success) Log.verbose("HistoryBuffer written written to file: %s", historyFilePath.c_str());
     else Log.warning("Error saving history to %s", historyFilePath.c_str());
-    
-    Log.verbose("History written to %s", historyFilePath.c_str());
     return success;
   }
 
-  bool load(Stream& readStream) override {
+  bool load(const JsonObjectConst& historyElement) override {
     _historyItems.clear();  // Start from scratch...
+
+    JsonArrayConst historyArray = historyElement[F("history")];
+
+    ItemType item;
+    uint32_t nLoaded = 0;
+    for (JsonObjectConst jsonItem : historyArray) {
+      item.internalize(jsonItem);
+      _historyItems.push(item);
+      nLoaded++;
+    }
+    if (nLoaded) {
+      const ItemType& last =  _historyItems.peekAt(nLoaded-1);
+      _lastTimeStamp = last.timestamp;
+    }
+
+    return true;
+  }
+
+  bool load(Stream& readStream) override {
 
     DynamicJsonDocument doc(MaxHistoryFileSize);
     auto error = deserializeJson(doc, readStream);
@@ -100,27 +121,8 @@ public:
       return false;
     }
 
-    JsonArrayConst historyArray = doc[F("history")];
-
-    ItemType item;
-    for (JsonObjectConst jsonItem : historyArray) {
-      item.internalize(jsonItem);
-      _historyItems.push(item);
-    }
-
-    return true;
-  }
-
-  bool load(const JsonObjectConst& historyElement) override {
-    JsonArrayConst historyArray = historyElement[F("history")];
-
-    ItemType item;
-    for (JsonObjectConst jsonItem : historyArray) {
-      item.internalize(jsonItem);
-      _historyItems.push(item);
-    }
-
-    return true;
+    const JsonObjectConst root = doc.as<JsonObjectConst>();
+    return load(root);
   }
 
   bool load(const String& historyFilePath) override {
@@ -151,7 +153,7 @@ public:
   virtual bool conditionalPush(Serializable& item) override {
     // This should be a dynamic_cast with error checking just in case the
     // Serializable item is not really of ItemType
-    conditionalPush(static_cast<ItemType&>(item));
+    return conditionalPush(static_cast<ItemType&>(item));
   }
 
 
@@ -159,11 +161,9 @@ public:
   // Member functions directly from HistoryBuffer
   //
 
-  void setInterval(time_t interval) { _interval = interval; }
-
   inline bool conditionalPush(const ItemType& item) {
     if (item.timestamp - _lastTimeStamp >= _interval) {
-      _historyItems.push(std::move(item));  // TO DO: Is the std::move doing anything here?
+      _historyItems.push(item);
       _lastTimeStamp = item.timestamp;
       return true;
     }
@@ -184,7 +184,6 @@ public:
 
 private:
 	CircularBuffer<ItemType, Size> _historyItems;
-  time_t _interval = 0;
   time_t _lastTimeStamp = 0;
   
   void writePreamble(Stream& writeStream) {

@@ -25,27 +25,30 @@
 template<int Size>
 class HistoryBuffers {
 public:
-  void setBuffer(HistoryBufferIO* buffer, const char* name, uint8_t i) {
+  using BufferDescriptor = struct {
+    HistoryBufferIO* buffer;
+    const char* name;
+    time_t interval;
+  };
+
+  void setBuffer(uint8_t i, const BufferDescriptor& descriptor) {
     if (i >= Size) {
       Log.warning("HistoryBuffers::setBuffer: index out of range %d/%d", i, Size);
       return;
     }
-    names[i] = name;
-    buffers[i] = buffer;
+    bufferDescriptors[i] = descriptor;
+    descriptor.buffer->setInterval(descriptor.interval);
   }
 
   bool store(Stream& writeStream) {
     writeStream.print("{ ");
-
     for (int i = 0; i < Size; i++) {
       if (i) writeStream.print(",\n");
-      writeStream.print('"'); writeStream.print(names[i]); writeStream.print("\":");
-      buffers[i]->store(writeStream);
+      writeStream.print('"'); writeStream.print(bufferDescriptors[i].name); writeStream.print("\":");
+      bufferDescriptors[i].buffer->store(writeStream);
     }
-
     writeStream.print(" }");
 
-    Log.verbose("HistoryBuffers written to stream");
     return true;
   }
 
@@ -76,9 +79,9 @@ public:
     }
 
     JsonObjectConst obj;
-    for (int i = 0; i < buffers.size(); i++) {
-      obj = doc[names[i]];
-      buffers[i]->load(obj);
+    for (int i = 0; i < bufferDescriptors.size(); i++) {
+      obj = doc[bufferDescriptors[i].name];
+      bufferDescriptors[i].buffer->load(obj);
     }
 
     return true;
@@ -109,10 +112,16 @@ public:
     return success;
   }
 
+  void clear() {
+    for (int i = 0; i < bufferDescriptors.size(); i++) {
+      bufferDescriptors[i].buffer->clear();
+    }
+  }
+
   bool conditionalPushAll(Serializable& item) {
     bool pushed = false;
-    for (int i = 0; i < buffers.size(); i++) {
-      pushed |= buffers[i]->conditionalPush(item);
+    for (int i = 0; i < bufferDescriptors.size(); i++) {
+      pushed |= bufferDescriptors[i].buffer->conditionalPush(item);
     }
     return pushed;
   }
@@ -120,9 +129,7 @@ public:
 private:
   static constexpr size_t MaxHistoryFileSize = 8192;
 
-  std::array<HistoryBufferIO*, Size> buffers;
-  std::array<String, Size> names;  
-
+  std::array<BufferDescriptor, Size> bufferDescriptors;
 };
 
 #endif  // HistoryBuffers_h

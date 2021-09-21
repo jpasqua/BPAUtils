@@ -14,8 +14,8 @@ void prepLogging() {
   Log.setSuffix(flushSerial);
 
   // Separate out from the normal garbage that starts the output
-  Serial.println(); Serial.flush(); delay(100);
-  Serial.println(); Serial.flush(); delay(100);
+  delay(200);
+  Serial.print("\n\n");
 }
 
 void prepFS() {
@@ -85,34 +85,39 @@ void testLoadingFromObj() {
     historyBuffer.load(element);
     Log.verbose("About to serialize to the console");
     historyBuffer.store(Serial);
+    Log.verbose("===== Test: Complete");
   }
 }
 
 void testPushingRandomData() {
+  Log.verbose("===== Test: Push randomly generated items into a buffer and print it");
   HistoryBuffer<THPReadings, 5> historyBuffer;
   genRandomData(historyBuffer);
 
-  Log.verbose("About to serialize to the console");
+  Log.verbose("-- About to serialize to the console");
   HistoryBufferIO* io = &historyBuffer;
   io->store(Serial);
+  Log.verbose("===== Test: Complete");
 }
 
 void testLoadAndStoreToFile() {
+  Log.verbose("===== Test: Store a single buffer of randomly generated data to a file");
   HistoryBuffer<THPReadings, 5> historyBuffer;
   genRandomData(historyBuffer);
 
-  Log.verbose("About to store to file");
   String historyFilePath = "/temp/history.json";
   historyBuffer.store(historyFilePath);
 
   historyBuffer.clear();
   historyBuffer.load(historyFilePath);
 
-  Log.verbose("About to serialize to the console");
+  Log.verbose("-- About to serialize to the console");
   historyBuffer.store(Serial);  
+  Log.verbose("===== Test: Complete");
 }
 
 void testHistoryBuffers() {
+  Log.verbose("===== Test: Storing multiple buffers using a HistoryBuffers object");
   HistoryBuffers<3> buffers;
   HistoryBuffer<THPReadings, 5> hour;
   HistoryBuffer<THPReadings, 5> day;
@@ -122,25 +127,22 @@ void testHistoryBuffers() {
   genRandomData(day);
   genRandomData(week);
 
-  buffers.setBuffer(&day, "day", 0);
-  buffers.setBuffer(&hour, "hour", 1);
-  buffers.setBuffer(&week, "week", 2);
+  buffers.setBuffer(0, {&day, "day", 12});
+  buffers.setBuffer(1, {&hour, "hour", 24});
+  buffers.setBuffer(2, {&week, "week", 28});
 
-  Log.verbose("About store a HistoryBuffers object");
+  Log.verbose("-- About store a HistoryBuffers object");
   buffers.store("/buffers.json");
 
-  Log.verbose("Clearing the individual buffers");
-  hour.clear();
-  day.clear();
-  week.clear();
+  Log.verbose("-- Clearing the individual buffers");
+  buffers.clear();
 
-  Log.verbose("Reloading the buffers from a file");
+  Log.verbose("-- Reloading the buffers from a file");
   buffers.load("/buffers.json");
 
-  Log.verbose("Displaying loaded values");
-  hour.store(Serial);
-  day.store(Serial);
-  week.store(Serial);
+  Log.verbose("-- Display the loaded values");
+  buffers.store(Serial);
+  Log.verbose("===== Test: Complete");
 }
 
 void setup() {
