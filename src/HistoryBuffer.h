@@ -41,8 +41,10 @@ public:
   virtual bool load(Stream& readStream) = 0;
   virtual bool load(const JsonObjectConst& historyElement) = 0;
   virtual bool load(const String& historyFilePath) = 0;
+
   virtual bool conditionalPush(Serializable& item) = 0;
-  virtual void clear();
+  virtual void clear() = 0;
+
   void setInterval(time_t interval) { _interval = interval; }
 
 protected:
@@ -151,11 +153,11 @@ public:
   }
 
   virtual bool conditionalPush(Serializable& item) override {
-    // This should be a dynamic_cast with error checking just in case the
-    // Serializable item is not really of ItemType
+    // TO DO: This is not safe. We should do something to ensure that
+    // the provided Serializable item is in fact of type ItemType
+    // such as a dynamic_cast or perhaps some sort of CRTP structure
     return conditionalPush(static_cast<ItemType&>(item));
   }
-
 
   //
   // Member functions directly from HistoryBuffer
@@ -171,7 +173,7 @@ public:
   }
 
   inline bool push(const ItemType& item) {
-    return _historyItems.push(std::move(item));
+    return _historyItems.push(item);
   }
 
   inline const ItemType& peekAt(size_t index) const {

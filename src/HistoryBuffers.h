@@ -43,7 +43,7 @@ public:
   bool store(Stream& writeStream) {
     writeStream.print("{ ");
     for (int i = 0; i < Size; i++) {
-      if (i) writeStream.print(",\n");
+      if (i) writeStream.print(", ");
       writeStream.print('"'); writeStream.print(bufferDescriptors[i].name); writeStream.print("\":");
       bufferDescriptors[i].buffer->store(writeStream);
     }
@@ -113,8 +113,8 @@ public:
   }
 
   void clear() {
-    for (int i = 0; i < bufferDescriptors.size(); i++) {
-      bufferDescriptors[i].buffer->clear();
+    for (const BufferDescriptor& bd : bufferDescriptors) {
+      bd.buffer->clear();
     }
   }
 
