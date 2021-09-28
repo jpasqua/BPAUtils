@@ -1,7 +1,7 @@
 #ifndef Output_h
 #define Output_h
 
-#include <Time.h>
+#include <TimeLib.h>
 
 namespace Output {
   void setOptions(bool* metric, bool* use24Hour);
