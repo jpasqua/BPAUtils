@@ -21,6 +21,17 @@ namespace Basics {
 
 
   // ----- Time Related
+  // Workaround issue in TimeLib (https://github.com/PaulStoffregen/Time/issues/154)
+  #undef minutesToTime_t
+  #undef hoursToTime_t
+  #undef daysToTime_t
+  #undef weeksToTime_t
+
+  #define minutesToTime_t(M) ( (M) * SECS_PER_MIN)  
+  #define hoursToTime_t(H)   ( (H) * SECS_PER_HOUR)  
+  #define daysToTime_t(D)    ( (D) * SECS_PER_DAY)
+  #define weeksToTime_t(W)   ( (W) * SECS_PER_WEEK)
+
   // --- Constants
   constexpr uint32_t  MillisPerSecond = 1000L;
   constexpr uint32_t  SecondsPerMinute = 60;
