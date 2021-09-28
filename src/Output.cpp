@@ -20,17 +20,17 @@ namespace Output {
   static const char* ImperialBaroUnits = "inHg";
 
 
-  float temp(float temp) { return (_useMetric) ? temp : Basics::c_to_f(temp); }
-  float tempSpread(float spread) { return (_useMetric) ? spread : Basics::delta_c_to_f(spread); }
-  float baro(float baro) { return (_useMetric) ? baro : Basics::hpa_to_inhg(baro); }
-  const char* tempUnits() { return (_useMetric) ? MetricTempUnits : ImperialTempUnits; }
-  const char* baroUnits() { return (_useMetric) ? MetricBaroUnits : ImperialBaroUnits; }
+  float temp(float temp) { return (*_useMetric) ? temp : Basics::c_to_f(temp); }
+  float tempSpread(float spread) { return (*_useMetric) ? spread : Basics::delta_c_to_f(spread); }
+  float baro(float baro) { return (*_useMetric) ? baro : Basics::hpa_to_inhg(baro); }
+  const char* tempUnits() { return (*_useMetric) ? MetricTempUnits : ImperialTempUnits; }
+  const char* baroUnits() { return (*_useMetric) ? MetricBaroUnits : ImperialBaroUnits; }
 
 
   // ----- Time
   String formattedTime(time_t theTime, bool includeSeconds) {
     return formattedInterval(
-        _use24Hour ? hour(theTime) : hourFormat12(theTime),
+        *_use24Hour ? hour(theTime) : hourFormat12(theTime),
         minute(theTime), second(theTime), includeSeconds);
   }
 
