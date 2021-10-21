@@ -1,6 +1,6 @@
 # BPAUtils
 
-A Collection of semi-random utility functions and classes.
+A Collection of utility functions and classes targeted to the Arduino environment, specifically the ESP family (ESP8266 and ESP32).
 
 ## Contents
 
