@@ -1,9 +1,20 @@
 /*
  * HistoryBuffers
- *     WRITE ME
+ *     Manage a collection of related HistoryBuffer objects
  *
- * NOTES:
- * o WRITE ME
+ * CONSIDER:
+ * o It can be very memory intensive to load from a single file
+ *   that contains multiple HistoryBuffer serializations. To get
+ *   around this we could either:
+ *   a) Save each history buffer to a separate file and load from
+ *      those files OR
+ *   b) Use a filter document and load the same file N times using each
+ *      buffer's name to get just the data in question.
+ *   The former should, in theory, be faster, but from a developer
+ *   perspective it's kind of a pain to have multiple files if you want
+ *   to read back and preserve state.
+ * o Think about adding a max size to the buffer descriptor to guide
+ *   how much space to allocate.
  *
  */
 
@@ -63,7 +74,7 @@ public:
     bool success = store(historyFile);
     historyFile.close();
 
-    if (success) Log.verbose("HistoryBuffers written written to file");
+    if (success) Log.verbose("HistoryBuffers written to file: %s", historyFilePath.c_str());
     else Log.warning("Error saving history to %s", historyFilePath.c_str());
     
     return success;
@@ -126,8 +137,26 @@ public:
     return pushed;
   }
 
+  void getTimeRange(int index, time_t& start, time_t& end) const {
+    start = bufferDescriptors[index].buffer->first().timestamp;
+    end = bufferDescriptors[index].buffer->last().timestamp;
+  }
+
+  const Serializable& peekAt(size_t bufferIndex, size_t sampleIndex) const {
+    return bufferDescriptors[bufferIndex].buffer->peekAt(sampleIndex);
+  }
+
+  size_t sizeOfBuffer(size_t bufferIndex) const {
+    return bufferDescriptors[bufferIndex].buffer->size();
+  }
+
+  const BufferDescriptor& operator[](int index) {
+    // Can fail if index is out of bounds
+    return bufferDescriptors[index];
+  }
+
 private:
-  static constexpr size_t MaxHistoryFileSize = 8192;
+  static constexpr size_t MaxHistoryFileSize = 10000;
 
   std::array<BufferDescriptor, Size> bufferDescriptors;
 };

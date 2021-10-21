@@ -44,6 +44,11 @@ public:
 
   virtual bool conditionalPush(Serializable& item) = 0;
   virtual void clear() = 0;
+  virtual const Serializable& peekAt(size_t index) const = 0;
+  virtual const Serializable& first() const = 0;
+  virtual const Serializable& last() const = 0;
+
+  virtual size_t size() const;
 
   void setInterval(time_t interval) { _interval = interval; }
 
@@ -54,7 +59,7 @@ protected:
 template<typename ItemType, int Size>
 class HistoryBuffer : public HistoryBufferIO {
 private:
-	static constexpr size_t MaxHistoryFileSize = 8192;
+	static constexpr size_t MaxHistoryFileSize = 12000;
   static_assert(std::is_base_of<Serializable, ItemType>::value, "HistoryBuffer Item must derive from Serializable");
   
 
@@ -180,9 +185,17 @@ public:
     return _historyItems.peekAt(index);
   }
 
+  inline const ItemType& first() const {
+    return _historyItems.peekAt(0);
+  }
+
+  inline const ItemType& last() const {
+    return _historyItems.peekAt(_historyItems.size()-1);
+  }
+
   inline void clear() { _historyItems.clear(); }
 
-  constexpr size_t size() const { return _historyItems.size(); } 
+  constexpr size_t size() const override { return _historyItems.size(); } 
 
 private:
 	CircularBuffer<ItemType, Size> _historyItems;
