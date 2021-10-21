@@ -15,6 +15,11 @@
 
 namespace Basics {
   // ----- Basic Types
+  using Pin = uint8_t;
+  using ActionID = uint8_t;
+  constexpr Pin UnusedPin = 255;
+  constexpr ActionID UnusedAction = 255;
+
   using StringMapper = std::function<String(const String&)>;
   using ReferenceMapper = std::function<void(const String&, String&)> ;
   using FloatValCB = std::function<void(float)>;
@@ -40,8 +45,8 @@ namespace Basics {
   constexpr uint32_t  MillisPerHour = (SecondsPerHour * MillisPerSecond);
   constexpr uint32_t  MillisPerMinute = (SecondsPerMinute * MillisPerSecond);
 
-  #define minutesToMS(M) (minutesToTime_t(M) * 1000L)  
-  #define hoursToMS(H)   (hoursToTime_t(H)   * 1000L  
+  #define minutesToMS(M) (minutesToTime_t(M) * 1000L)
+  #define hoursToMS(H)   (hoursToTime_t(H)   * 1000L)
   #define daysToMS(D)    (daysToTime_t(D)    * 1000L)
   #define weeksToMS(W)   (weeksToTime_t(W)   * 1000L)
 
