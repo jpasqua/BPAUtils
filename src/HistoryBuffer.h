@@ -26,55 +26,51 @@
 //                                  Third Party Libraries
 #include <ArduinoLog.h>
 #include <ArduinoJson.h>
-#include <CircularBuffer.h>
 //                                  WebThing Includes
 #include <ESP_FS.h>
 //                                  Local Includes
+#include "BPACircularBuffer.h"
 #include "Serializable.h"
 //--------------- End:    Includes ---------------------------------------------
 
 
-class HistoryBufferIO {
-public:
-  virtual bool store(Stream& writeStream) = 0;
-  virtual bool store(const String& historyFilePath) = 0;
-  virtual bool load(Stream& readStream) = 0;
-  virtual bool load(const JsonObjectConst& historyElement) = 0;
-  virtual bool load(const String& historyFilePath) = 0;
-
-  virtual bool conditionalPush(Serializable& item) = 0;
-  virtual void clear() = 0;
-  virtual const Serializable& peekAt(size_t index) const = 0;
-  virtual const Serializable& first() const = 0;
-  virtual const Serializable& last() const = 0;
-
-  virtual size_t size() const;
-
-  void setInterval(time_t interval) { _interval = interval; }
-
-protected:
-  time_t _interval = 0;
+using HBDescriptor = struct {
+  size_t nElements;
+  const char* name;
+  time_t interval;
 };
 
-template<typename ItemType, int Size>
-class HistoryBuffer : public HistoryBufferIO {
-private:
-	static constexpr size_t MaxHistoryFileSize = 12000;
-  static_assert(std::is_base_of<Serializable, ItemType>::value, "HistoryBuffer Item must derive from Serializable");
-  
-
+class HistoryBufferBase {
 public:
-  //
-  // Member functions overriden from HistoryBufferIO
-  //
+  time_t _interval = 0;
+  const char* _name;
 
-  bool store(Stream& writeStream) override {
+  // ----- Abstract Member Functions
+
+  virtual size_t size() const = 0;
+  virtual const Serializable& first() const = 0;
+  virtual const Serializable& last() const = 0;
+  virtual const Serializable& peekAt(size_t index) const = 0;
+
+  virtual void clear() = 0;
+  virtual void push(JsonObjectConst jsonItem) = 0;
+
+  // NOTE: Caller must guarantee that the Serializable that they provide
+  // is in fact of the type required by the concrete derived class.
+  // There is no checking and no dynamic_cast!
+  virtual bool push(const Serializable& item) = 0;
+  virtual bool conditionalPush(const Serializable& item) = 0;
+
+
+  // ----- Concrete Member Functions
+
+  bool store(Stream& writeStream) const {
     writePreamble(writeStream);
 
     // Write the items
-    for (size_t i = 0; i < _historyItems.size(); i++) {
+    for (size_t i = 0; i < size(); i++) {
       if (i) writeStream.print(',');
-      const ItemType& item = _historyItems.peekAt(i);
+      const Serializable& item = peekAt(i);
       item.externalize(writeStream);
     }
 
@@ -83,7 +79,7 @@ public:
     return true;
   }
 
-  bool store(const String& historyFilePath) override {
+  bool store(const String& historyFilePath) const {
     File historyFile = ESP_FS::open(historyFilePath, "w");
 
     if (!historyFile) {
@@ -99,28 +95,24 @@ public:
     return success;
   }
 
-  bool load(const JsonObjectConst& historyElement) override {
-    _historyItems.clear();  // Start from scratch...
+  bool load(const JsonObjectConst& historyElement) {
+    clear();  // Start from scratch...
 
     JsonArrayConst historyArray = historyElement[F("history")];
 
-    ItemType item;
     uint32_t nLoaded = 0;
     for (JsonObjectConst jsonItem : historyArray) {
-      item.internalize(jsonItem);
-      _historyItems.push(item);
+      push(jsonItem);
       nLoaded++;
     }
     if (nLoaded) {
-      const ItemType& last =  _historyItems.peekAt(nLoaded-1);
-      _lastTimeStamp = last.timestamp;
+      _lastTimeStamp = last().timestamp;
     }
 
     return true;
   }
 
-  bool load(Stream& readStream) override {
-
+  bool load(Stream& readStream) {
     DynamicJsonDocument doc(MaxHistoryFileSize);
     auto error = deserializeJson(doc, readStream);
     if (error) {
@@ -132,7 +124,7 @@ public:
     return load(root);
   }
 
-  bool load(const String& historyFilePath) override {
+  bool load(const String& historyFilePath) {
     size_t size = 0;
     File historyFile = ESP_FS::open(historyFilePath, "r");
 
@@ -157,16 +149,59 @@ public:
     return success;
   }
 
-  virtual bool conditionalPush(Serializable& item) override {
-    // TO DO: This is not safe. We should do something to ensure that
-    // the provided Serializable item is in fact of type ItemType
-    // such as a dynamic_cast or perhaps some sort of CRTP structure
-    return conditionalPush(static_cast<ItemType&>(item));
+  void getTimeRange(time_t& start, time_t& end) const {
+    start = first().timestamp;
+    end = last().timestamp;
   }
 
-  //
-  // Member functions directly from HistoryBuffer
-  //
+protected:
+  void writePreamble(Stream& writeStream) const {
+    writeStream.print("{ \"history\": [");
+  }
+
+  void writePostscript(Stream& writeStream) const {
+    writeStream.println("]}");
+    writeStream.flush();
+  }
+
+  time_t _lastTimeStamp = 0;
+
+private:
+  static constexpr size_t MaxHistoryFileSize = 12000;
+
+};
+
+
+template<typename ItemType>
+class HistoryBuffer  : public HistoryBufferBase {
+
+public:
+
+/*------------------------------------------------------------------------------
+ *
+ * Construct / Destruct / Initialize
+ *
+ *----------------------------------------------------------------------------*/
+
+  HistoryBuffer() = default;
+
+  HistoryBuffer(const HBDescriptor& desc, ItemType* space = nullptr) {
+    init(desc, space);
+  }
+
+  void init(const HBDescriptor& desc, ItemType* space = nullptr) {
+    if (space) _historyItems.init(space, desc.nElements);
+    else _historyItems.init(desc.nElements);
+    _name = desc.name;
+    _interval = desc.interval;
+  }
+
+
+/*------------------------------------------------------------------------------
+ *
+ * Member functions that are introduced in this derived class (not in base)
+ *
+ *----------------------------------------------------------------------------*/
 
   inline bool conditionalPush(const ItemType& item) {
     if (item.timestamp - _lastTimeStamp >= _interval) {
@@ -177,38 +212,46 @@ public:
     return false;
   }
 
-  inline bool push(const ItemType& item) {
-    return _historyItems.push(item);
+  inline bool push(const ItemType& item) { return _historyItems.push(item);  }
+
+
+/*------------------------------------------------------------------------------
+ *
+ * Implementation of the HistoryBufferBase interface
+ *
+ *----------------------------------------------------------------------------*/
+
+  virtual size_t size() const override { return _historyItems.size(); } 
+  virtual const ItemType& first() const override { return _historyItems.peekAt(0);  }
+  virtual const ItemType& last() const override { return _historyItems.peekAt(_historyItems.size()-1); }
+  virtual const ItemType& peekAt(size_t index) const override { return _historyItems.peekAt(index); }
+
+  virtual void clear() override { _historyItems.clear(); }
+
+  virtual void push(JsonObjectConst jsonItem) override {
+    ItemType item;
+    item.internalize(jsonItem);
+    _historyItems.push(item);
   }
 
-  inline const ItemType& peekAt(size_t index) const {
-    return _historyItems.peekAt(index);
+  virtual bool push(const Serializable& item) override {
+    // We know based on the assert below that ItemType isa Serializable,
+    // but it is up to the caller to ensure that this particulat Serializable
+    // isa ItemType
+    return _historyItems.push(static_cast<const ItemType&>(item)); 
   }
 
-  inline const ItemType& first() const {
-    return _historyItems.peekAt(0);
+  virtual bool conditionalPush(const Serializable& item) override {
+    // We know based on the assert below that ItemType isa Serializable,
+    // but it is up to the caller to ensure that this particulat Serializable
+    // isa ItemType
+    return conditionalPush(static_cast<const ItemType&>(item));
   }
-
-  inline const ItemType& last() const {
-    return _historyItems.peekAt(_historyItems.size()-1);
-  }
-
-  inline void clear() { _historyItems.clear(); }
-
-  constexpr size_t size() const override { return _historyItems.size(); } 
 
 private:
-	CircularBuffer<ItemType, Size> _historyItems;
-  time_t _lastTimeStamp = 0;
+  static_assert(std::is_base_of<Serializable, ItemType>::value, "HistoryBuffer Item must derive from Serializable");
+	BPACircularBuffer<ItemType> _historyItems;
   
-  void writePreamble(Stream& writeStream) {
-    writeStream.print("{ \"history\": [");
-  }
-
-  void writePostscript(Stream& writeStream) {
-    writeStream.println("]}");
-    writeStream.flush();
-  }
 };
 
 #endif  // HistoryBuffer_h

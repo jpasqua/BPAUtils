@@ -5,6 +5,7 @@
 #include <HistoryBuffer.h>
 #include <HistoryBuffers.h>
 #include "THPReadings.h"
+#include "BPABasics.h"
 
 void flushSerial(Print *p) { p->print(CR); Serial.flush(); }
 
@@ -61,7 +62,7 @@ const char* TestData =
 "    ]"
 "} }";
 
-void genRandomData(HistoryBuffer<THPReadings, 5>& historyBuffer) {
+void genRandomData(HistoryBuffer<THPReadings>& historyBuffer) {
   THPReadings item;
   for (int i = 1; i < 10; i++) {
     item.temp = ((float)random(1000))/10;
@@ -73,7 +74,7 @@ void genRandomData(HistoryBuffer<THPReadings, 5>& historyBuffer) {
 }
 
 void testLoadingFromObj() {
-  HistoryBuffer<THPReadings, 5> historyBuffer;
+  HistoryBuffer<THPReadings> historyBuffer({5, "test", 23});
   StaticJsonDocument<1024> doc;
   auto error = deserializeJson(doc, TestData);
   if (error) {
@@ -85,24 +86,23 @@ void testLoadingFromObj() {
     historyBuffer.load(element);
     Log.verbose("About to serialize to the console");
     historyBuffer.store(Serial);
-    Log.verbose("===== Test: Complete");
+    Log.verbose("\n===== Test: Complete");
   }
 }
 
 void testPushingRandomData() {
-  Log.verbose("===== Test: Push randomly generated items into a buffer and print it");
-  HistoryBuffer<THPReadings, 5> historyBuffer;
+  Log.verbose("\n===== Test: Push randomly generated items into a buffer and print it");
+  HistoryBuffer<THPReadings> historyBuffer({5, "test", 23});
   genRandomData(historyBuffer);
 
   Log.verbose("-- About to serialize to the console");
-  HistoryBufferIO* io = &historyBuffer;
-  io->store(Serial);
-  Log.verbose("===== Test: Complete");
+  historyBuffer.store(Serial);
+  Log.verbose("\n===== Test: Complete");
 }
 
 void testLoadAndStoreToFile() {
-  Log.verbose("===== Test: Store a single buffer of randomly generated data to a file");
-  HistoryBuffer<THPReadings, 5> historyBuffer;
+  Log.verbose("\n===== Test: Store a single buffer of randomly generated data to a file");
+  HistoryBuffer<THPReadings> historyBuffer({5, "test", 23});  // Use constructor based initialization
   genRandomData(historyBuffer);
 
   String historyFilePath = "/temp/history.json";
@@ -113,37 +113,68 @@ void testLoadAndStoreToFile() {
 
   Log.verbose("-- About to serialize to the console");
   historyBuffer.store(Serial);  
-  Log.verbose("===== Test: Complete");
+  Log.verbose("\n===== Test: Complete");
 }
 
 void testHistoryBuffers() {
-  Log.verbose("===== Test: Storing multiple buffers using a HistoryBuffers object");
-  HistoryBuffers<3> buffers;
-  HistoryBuffer<THPReadings, 5> hour;
-  HistoryBuffer<THPReadings, 5> day;
-  HistoryBuffer<THPReadings, 5> week;
+  Log.verbose("\n===== Test: Storing multiple buffers using a HistoryBuffers object (v1)");
+  HistoryBuffers<THPReadings, 3> buffers;
+  buffers.describe({12, "hour", minutesToTime_t(5)});
+  buffers.describe({24, "day", hoursToTime_t(1)});
+  buffers.describe({28, "week", hoursToTime_t(6)});
 
-  genRandomData(hour);
-  genRandomData(day);
-  genRandomData(week);
+  genRandomData(buffers.getMutable(0));
+  genRandomData(buffers.getMutable(1));
+  genRandomData(buffers.getMutable(2));
 
-  buffers.setBuffer(0, {&day, "day", 12});
-  buffers.setBuffer(1, {&hour, "hour", 24});
-  buffers.setBuffer(2, {&week, "week", 28});
-
-  Log.verbose("-- About store a HistoryBuffers object");
+  Log.verbose("\n-- About store a HistoryBuffers object");
   buffers.store("/buffers.json");
 
-  Log.verbose("-- Clearing the individual buffers");
-  buffers.clear();
+  Log.verbose("\n-- Clearing the individual buffers");
+  buffers.clearAll();
 
-  Log.verbose("-- Reloading the buffers from a file");
+  Log.verbose("\n-- Reloading the buffers from a file");
   buffers.load("/buffers.json");
 
-  Log.verbose("-- Display the loaded values");
+  Log.verbose("\n-- Display the loaded values");
   buffers.store(Serial);
-  Log.verbose("===== Test: Complete");
+  Log.verbose("\n===== Test: Complete");}
+
+void testHistoryBuffers2() {
+  // Log.verbose("\n===== Test: Storing multiple buffers using a HistoryBuffers object (v2)");
+  // HistoryBuffers<THPReadings, 3> buffers;
+
+  // HBDescriptor descriptors[] {
+  //   {4, "hour", 23},
+  //   {5, "day", 34},
+  //   {6, "week", 119}
+  // };
+  // THPReadings spaceForAllHistories[15];
+
+  // buffers.init(descriptors, spaceForAllHistories);
+
+  // genRandomData(buffers[0]);
+  // genRandomData(buffers[1]);
+  // genRandomData(buffers[2]);
+
+  // // buffers.setBuffer(0, {&rawBuffers[0], "1", 12});
+  // // buffers.setBuffer(1, {&rawBuffers[1], "2", 24});
+  // // buffers.setBuffer(2, {&rawBuffers[2], "3", 28});
+
+  // Log.verbose("\n-- About store a HistoryBuffers object");
+  // buffers.store("/buffers.json");
+
+  // Log.verbose("\n-- Clearing the individual buffers");
+  // buffers.clear();
+
+  // Log.verbose("\n-- Reloading the buffers from a file");
+  // buffers.load("/buffers.json");
+
+  // Log.verbose("\n-- Display the loaded values");
+  // buffers.store(Serial);
+  // Log.verbose("\n===== Test: Complete");
 }
+
 
 void setup() {
 	prepLogging();
@@ -154,6 +185,7 @@ void setup() {
   testLoadingFromObj();
 
   testHistoryBuffers();
+  testHistoryBuffers2();
 }
 
 void loop() {

@@ -23,6 +23,7 @@
 
 //--------------- Begin:  Includes ---------------------------------------------
 //                                  Core Libraries
+#include <array>
 //                                  Third Party Libraries
 #include <ArduinoLog.h>
 #include <ArduinoJson.h>
@@ -33,30 +34,47 @@
 //--------------- End:    Includes ---------------------------------------------
 
 
-template<int Size>
+template<typename BufferType, int Size>
 class HistoryBuffers {
 public:
+
+/*------------------------------------------------------------------------------
+ *
+ * Types
+ *
+ *----------------------------------------------------------------------------*/
+
   using BufferDescriptor = struct {
-    HistoryBufferIO* buffer;
+    HistoryBuffer<BufferType>* buffer;
     const char* name;
     time_t interval;
   };
 
-  void setBuffer(uint8_t i, const BufferDescriptor& descriptor) {
-    if (i >= Size) {
-      Log.warning("HistoryBuffers::setBuffer: index out of range %d/%d", i, Size);
-      return;
-    }
-    bufferDescriptors[i] = descriptor;
-    descriptor.buffer->setInterval(descriptor.interval);
+
+/*------------------------------------------------------------------------------
+ *
+ * Construct / Destruct / Initialize
+ *
+ *----------------------------------------------------------------------------*/
+
+  HistoryBuffers() = default;
+
+  void describe(const HBDescriptor& descriptor) {
+    buffers[nBuffersDescribed++].init(descriptor);
   }
+
+/*------------------------------------------------------------------------------
+ *
+ * Internalize / Externalize HistoryBuffers
+ *
+ *----------------------------------------------------------------------------*/
 
   bool store(Stream& writeStream) {
     writeStream.print("{ ");
     for (int i = 0; i < Size; i++) {
       if (i) writeStream.print(", ");
-      writeStream.print('"'); writeStream.print(bufferDescriptors[i].name); writeStream.print("\":");
-      bufferDescriptors[i].buffer->store(writeStream);
+      writeStream.print('"'); writeStream.print(buffers[i]._name); writeStream.print("\":");
+      buffers[i].store(writeStream);
     }
     writeStream.print(" }");
 
@@ -90,9 +108,9 @@ public:
     }
 
     JsonObjectConst obj;
-    for (int i = 0; i < bufferDescriptors.size(); i++) {
-      obj = doc[bufferDescriptors[i].name];
-      bufferDescriptors[i].buffer->load(obj);
+    for (int i = 0; i < Size; i++) {
+      obj = doc[buffers[i]._name];
+      buffers[i].load(obj);
     }
 
     return true;
@@ -123,42 +141,40 @@ public:
     return success;
   }
 
-  void clear() {
-    for (const BufferDescriptor& bd : bufferDescriptors) {
-      bd.buffer->clear();
+/*------------------------------------------------------------------------------
+ *
+ * Access / Inspect / Modify elements of the HistoryBuffer
+ *
+ *----------------------------------------------------------------------------*/
+
+  void clearAll() {
+    for (int i = 0; i < Size; i++) {
+      buffers[i].clear();
     }
   }
 
-  bool conditionalPushAll(Serializable& item) {
+  bool conditionalPushAll(BufferType& item) {
     bool pushed = false;
-    for (int i = 0; i < bufferDescriptors.size(); i++) {
-      pushed |= bufferDescriptors[i].buffer->conditionalPush(item);
+    for (int i = 0; i < Size; i++) {
+      pushed |= buffers[i].conditionalPush(item);
     }
     return pushed;
   }
 
-  void getTimeRange(int index, time_t& start, time_t& end) const {
-    start = bufferDescriptors[index].buffer->first().timestamp;
-    end = bufferDescriptors[index].buffer->last().timestamp;
+  const HistoryBuffer<BufferType>& operator[](int index) const {
+    return buffers[index];
   }
 
-  const Serializable& peekAt(size_t bufferIndex, size_t sampleIndex) const {
-    return bufferDescriptors[bufferIndex].buffer->peekAt(sampleIndex);
+  HistoryBuffer<BufferType>& getMutable(int index) {
+    return buffers[index];
   }
 
-  size_t sizeOfBuffer(size_t bufferIndex) const {
-    return bufferDescriptors[bufferIndex].buffer->size();
-  }
-
-  const BufferDescriptor& operator[](int index) {
-    // Can fail if index is out of bounds
-    return bufferDescriptors[index];
-  }
 
 private:
   static constexpr size_t MaxHistoryFileSize = 10000;
 
-  std::array<BufferDescriptor, Size> bufferDescriptors;
+  uint8_t nBuffersDescribed = 0;
+  HistoryBuffer<BufferType> buffers[Size];
 };
 
 #endif  // HistoryBuffers_h
