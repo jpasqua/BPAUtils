@@ -68,7 +68,8 @@ public:
     writePreamble(writeStream);
 
     // Write the items
-    for (size_t i = 0; i < size(); i++) {
+    size_t nElements = size();
+    for (size_t i = 0; i < nElements; i++) {
       if (i) writeStream.print(',');
       const Serializable& item = peekAt(i);
       item.externalize(writeStream);
