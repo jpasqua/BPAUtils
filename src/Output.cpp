@@ -28,14 +28,14 @@ namespace Output {
 
 
   // ----- Time
-  String formattedTime(time_t theTime, bool includeSeconds) {
+  String formattedTime(time_t theTime, bool includeSeconds, bool zeroPadHours) {
     return formattedInterval(
         *_use24Hour ? hour(theTime) : hourFormat12(theTime),
-        minute(theTime), second(theTime), includeSeconds);
+        minute(theTime), second(theTime), zeroPadHours, includeSeconds);
   }
 
-  String formattedTime(bool includeSeconds) {
-    return formattedTime(now(), includeSeconds);
+  String formattedTime(bool includeSeconds, bool zeroPadHours) {
+    return formattedTime(now(), includeSeconds, zeroPadHours);
   }
 
   String formattedInterval(int h, int m, int s, bool zeroPadHours, bool includeSeconds) {

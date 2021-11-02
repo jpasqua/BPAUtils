@@ -14,8 +14,8 @@ namespace Output {
   const char* baroUnits();
 
   // ----- Time
-  String formattedTime(bool includeSeconds = false);
-  String formattedTime(time_t theTime, bool includeSeconds = false);
+  String formattedTime(bool includeSeconds = false, bool zeroPadHours = false);
+  String formattedTime(time_t theTime, bool includeSeconds = false, bool zeroPadHours = false);
   String formattedInterval(int h, int m, int s, bool zeroPadHours = false, bool includeSeconds = true);
   String formattedInterval(uint32_t seconds, bool zeroPadHours = true, bool includeSeconds = true);
 };
