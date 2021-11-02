@@ -13,6 +13,9 @@
 #define FREE(p) { if (p) free(p); }
 #define ARRAY_SIZE(a) (sizeof(a)/sizeof((a)[0]))
 
+template<std::size_t N, class T>
+constexpr std::size_t countof(T(&)[N]) { return N; }
+
 namespace Basics {
   // ----- Basic Types
   using Pin = uint8_t;
