@@ -113,15 +113,15 @@ class NeoPixelIndicators {
 public:
   Adafruit_NeoPixel *leds;
 
-  NeoPixelIndicators() { }
-
-  NeoPixelIndicators(uint8_t pin, uint8_t count) {
+  NeoPixelIndicators(uint8_t pin, uint8_t count, neoPixelType type=(NEO_GRB + NEO_KHZ800)) {
     _pin = pin;
     _count = count;
+    _type = type;
   }
 
   void begin() {
-    leds = new Adafruit_NeoPixel(_count, _pin, NEO_RGB + NEO_KHZ800);
+    // leds = new Adafruit_NeoPixel(_count, _pin, NEO_RGB + NEO_KHZ800);
+    leds = new Adafruit_NeoPixel(_count, _pin, _type);
     leds->begin();
     leds->clear();
     leds->show();
@@ -135,6 +135,7 @@ public:
 private:
   uint8_t _pin = 0;
   uint8_t _count = 0;
+  neoPixelType _type = NEO_GRB + NEO_KHZ800;
 };
 
 
@@ -161,8 +162,8 @@ public:
     _parent->leds->show();
   }
 
-  void on() { setColor(255, 255, 255); }
-  void off() { setColor(0, 0, 0); }
+  void on() { setColor(0xFFFFFF); }
+  void off() { setColor(0x000000); }
 
 private:
   NeoPixelIndicators* _parent;
