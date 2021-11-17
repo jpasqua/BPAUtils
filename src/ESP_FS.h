@@ -26,4 +26,14 @@ namespace ESP_FS {
   DirEnumerator* newEnumerator();
 };
 
+// To enumerate the entire filesystem, one could use:
+// void enumFS() {
+//   ESP_FS::DirEnumerator* de = ESP_FS::newEnumerator();
+//   de->begin("/");
+//   String path;
+//   while (de->next(path)) { Log.verbose("File: %s", path.c_str());  }
+//   delete de;
+// }
+
+
 #endif  // ESP_FS_h
