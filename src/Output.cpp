@@ -28,6 +28,13 @@ namespace Output {
 
 
   // ----- Time
+  int adjustedHour(int h24) {
+    if (*_use24Hour) return h24;
+    if (h24 == 0) return 12;
+    if (h24 > 12) return h24 - 12;
+    return h24;
+  }
+
   String formattedTime(time_t theTime, bool includeSeconds, bool zeroPadHours) {
     return formattedInterval(
         *_use24Hour ? hour(theTime) : hourFormat12(theTime),
