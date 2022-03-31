@@ -90,9 +90,7 @@ namespace ActionReader {
 	}	// END: ActionReader::Internal namespace
 
 
-
-
-  Action* fromJSON(const JsonDocument &doc, ActionFactory factory) {
+  SequenceAction* fromJSON(const JsonDocument &doc, ActionFactory factory) {
 	  JsonArrayConst json_actions = doc[F("actions")];
 
 	  for (JsonObjectConst json_action : json_actions) {
@@ -101,15 +99,21 @@ namespace ActionReader {
 	  	JsonObjectConst settings = json_action["settings"];
 
       Action* a = internal::uberFactory(type, settings, factory);
-	  	if (a == nullptr) Log.warning("Unknown Action type: %s", type.c_str());
-      else internal::actionMap[id] = a;
+
+	  	if (a == nullptr) {
+	  		Log.warning("Unknown Action type: %s", type.c_str());
+	  	} else if (id == "main" && !type.equalsIgnoreCase("Sequence")) {
+  			Log.warning("Main action must be a Sequence, but is %s", type.c_str());
+  		} else {
+	  		internal::actionMap[id] = a;
+  		}
 	  }
 
 	  auto mapping = internal::actionMap.find("main");
-		return (mapping == internal::actionMap.end()) ? nullptr : mapping->second;
+		return (SequenceAction*)((mapping == internal::actionMap.end()) ? nullptr : mapping->second);
 	}
 
-  Action* fromJSON(String filePath, ActionFactory factory) {
+  SequenceAction* fromJSON(String filePath, ActionFactory factory) {
 	  File actionFile = ESP_FS::open(filePath, "r");
 	  if (!actionFile) {
 	  	Log.warning("No action file was found: %s", filePath.c_str());
