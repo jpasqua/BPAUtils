@@ -1,14 +1,7 @@
 #ifndef ESP_FS_h
 #define ESP_FS_h
 
-//                                  WORKAROUNDS
-// Because some libraries define FS_NO_GLOBALS, we need this ugly workaround
-// An example of such a library is TFT_eSPI. Refer to this github issue.
-// https://github.com/esp8266/Arduino/issues/6286
-// Such libraries should be fixed, but we have no control over that.
 #include <FS.h>
-using File = fs::File;
-using FS = fs::FS;
 
 namespace ESP_FS {
   FS* getFS();
