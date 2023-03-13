@@ -35,7 +35,8 @@
         File f;
         do { f = enumRoot.openNextFile(); } while (f && f.isDirectory());
         if (!f) return false;
-        name = f.name();
+        name = f.path();
+
         return true;
       }
     private:
