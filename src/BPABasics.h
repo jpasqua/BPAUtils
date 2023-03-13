@@ -27,6 +27,8 @@ namespace Basics {
   using ReferenceMapper = std::function<void(const String&, String&)> ;
   using FloatValCB = std::function<void(float)>;
 
+  // ----- String Related
+  extern char* newFromString(String& source);
 
   // ----- Time Related
   // Workaround issue in TimeLib (https://github.com/PaulStoffregen/Time/issues/154)
