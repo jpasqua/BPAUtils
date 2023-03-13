@@ -35,6 +35,19 @@ namespace Output {
     return h24;
   }
 
+  String formattedDateTime(time_t theTime, bool includeSeconds, bool zeroPadHours) {
+    char buf[] = "2023-03-13";
+    sprintf(buf, "%4d-%02d-%02d ", year(theTime), month(theTime), day(theTime));
+    String dateTime(buf);
+
+    String formattedTime = formattedInterval(
+        *_use24Hour ? hour(theTime) : hourFormat12(theTime),
+        minute(theTime), second(theTime), zeroPadHours, includeSeconds);
+
+    dateTime.concat(formattedTime);
+    return dateTime;
+  }
+
   String formattedTime(time_t theTime, bool includeSeconds, bool zeroPadHours) {
     return formattedInterval(
         *_use24Hour ? hour(theTime) : hourFormat12(theTime),

@@ -20,6 +20,7 @@ namespace Output {
   String formattedTime(time_t theTime, bool includeSeconds = false, bool zeroPadHours = false);
   String formattedInterval(int h, int m, int s, bool zeroPadHours = false, bool includeSeconds = true);
   String formattedInterval(uint32_t seconds, bool zeroPadHours = true, bool includeSeconds = true);
+  String formattedDateTime(time_t theTime, bool includeSeconds = false, bool zeroPadHours = true);
 };
 
 #endif  // Output_h
