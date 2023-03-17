@@ -50,10 +50,10 @@ namespace Basics {
   constexpr uint32_t  MillisPerHour = (SecondsPerHour * MillisPerSecond);
   constexpr uint32_t  MillisPerMinute = (SecondsPerMinute * MillisPerSecond);
 
-  #define minutesToMS(M) (minutesToTime_t(M) * 1000L)
-  #define hoursToMS(H)   (hoursToTime_t(H)   * 1000L)
-  #define daysToMS(D)    (daysToTime_t(D)    * 1000L)
-  #define weeksToMS(W)   (weeksToTime_t(W)   * 1000L)
+  constexpr uint32_t  minutesToMS(uint32_t m) { return (minutesToTime_t(m) * 1000L); }
+  constexpr uint32_t  hoursToMS(uint32_t h) { return (hoursToTime_t(h) * 1000L); }
+  constexpr uint32_t  daysToMS(uint32_t d) { return (daysToTime_t(d) * 1000L); }
+  constexpr uint32_t  weeksToMS(uint32_t w) { return (weeksToTime_t(w) * 1000L); }
 
   // Functions
   inline time_t wallClockFromMillis(uint32_t milliTime) {
