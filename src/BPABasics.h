@@ -18,9 +18,9 @@ constexpr std::size_t countof(T const (&)[N]) noexcept { return N; }
 
 namespace Basics {
   // ----- Basic Types
-  using Pin = uint8_t;
+  using Pin = int;
   using ActionID = uint8_t;
-  constexpr Pin UnusedPin = 255;
+  constexpr Pin UnusedPin = -1;
   constexpr ActionID UnusedAction = 255;
 
   using StringMapper = std::function<String(const String&)>;
