@@ -23,8 +23,8 @@ public:
   // passed in. Internalize that JSON data into this object 
   virtual void internalize(const JsonObjectConst& obj) = 0;
 
-  // We are being asked to write a JSON representation of this argument
-  // out to the stream passed as a parameter.
+  // We are being asked to write a JSON representation of this object
+  // to the stream passed as a parameter.
   virtual void externalize(Stream& writeStream) const = 0;
 
   time_t timestamp;
