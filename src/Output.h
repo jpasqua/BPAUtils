@@ -6,6 +6,8 @@
 
 namespace Output {
   void setOptions(bool* metric, bool* use24Hour);
+  bool using24HourMode();
+  bool usingMetric();
 
   // ----- Units
   float temp(float temp);

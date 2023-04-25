@@ -12,6 +12,9 @@ namespace Output {
     _use24Hour = use24Hour;
     _useMetric = useMetric;
   }
+  
+  bool using24HourMode() { return _use24Hour; }
+  bool usingMetric() { return _useMetric; }
 
   // ----- Units
   static const char* MetricTempUnits = "°C";
