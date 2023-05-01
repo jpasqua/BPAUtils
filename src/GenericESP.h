@@ -3,6 +3,10 @@
 
 #include <Arduino.h>
 
+// Potenitally useful defines for clients
+#define PROCESSOR_ESP8266 1
+#define PROCESSOR_ESP32   2
+
 namespace GenericESP {
 
   // ----- System
