@@ -15,7 +15,9 @@ namespace ESP_FS {
   bool exists(const String& path);
 
   bool remove(const String& path);
-
+  bool rename(const char* pathFrom, const char* pathTo);
+  bool move(const char* pathFrom, const char* pathTo);
+  
   class DirEnumerator {
   public:
     virtual ~DirEnumerator() {};  // Must provide body for pure virtual destructor!
