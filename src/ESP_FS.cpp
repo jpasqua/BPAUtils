@@ -5,8 +5,13 @@
  */
 
 #define ESPFS_DEBUG_LOG
+
 #if defined(ESPFS_DEBUG_LOG)
-#include<ArduinoLog.h>
+  #include<ArduinoLog.h>
+#endif
+
+#if defined(ESP32)
+  #include <SPIFFS.h>
 #endif
 #include "ESP_FS.h"
 
@@ -67,7 +72,6 @@
 
 
 #if defined(ESP32)
-  #include <SPIFFS.h>
 
   namespace ESP_FS {
     class ESP32DirEnumerator : public DirEnumerator {
