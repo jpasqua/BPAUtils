@@ -84,6 +84,7 @@ namespace Basics {
   // Speed
   inline float mph_to_kph(float mph) { return mph * 1.60934f; }
   inline float kph_to_mph(float kph) { return kph / 1.60934f; }
+  inline float mps_to_mph(float mps) { return mps* 2.23694; }
 
   // Length
   inline float in_to_cm(float in) { return in * 2.54f; }
